@@ -130,7 +130,7 @@ function serveIndex(root, options) {
 
     // check if we have a directory
     debug('stat "%s"', path);
-    fs.stat(path, function(err, stat){
+    fs.stat(path, function (err, stat) {
       if (err && err.code === 'ENOENT') {
         return next();
       }
@@ -146,10 +146,10 @@ function serveIndex(root, options) {
 
       // fetch files
       debug('readdir "%s"', path);
-      fs.readdir(path, function(err, files){
+      fs.readdir(path, function (err, files) {
         if (err) return next(err);
         if (!hidden) files = removeHidden(files);
-        if (filter) files = files.filter(function(filename, index, list) {
+        if (filter) files = files.filter(function (filename, index, list) {
           return filter(filename, index, list, path);
         });
         files.sort();
@@ -236,13 +236,17 @@ serveIndex.plain = function _plain(req, res, files) {
  */
 
 function createHtmlFileList(files, dir, useIcons, view) {
-  var html = '<ul id="files" class="view-' + escapeHtml(view) + '">'
-    + (view === 'details' ? (
-      '<li class="header">'
-      + '<span class="name">Name</span>'
-      + '<span class="size">Size</span>'
-      + '<span class="date">Modified</span>'
-      + '</li>') : '');
+  var html = `
+  <table>
+   <thead>
+    <tr>
+        <th>Name</th>
+        <th>Size</th>
+        <th>Modified</th>
+        <th>Player</th>
+    </tr>
+  </thead>`
+
 
   html += files.map(function (file) {
     var classes = [];
@@ -275,18 +279,25 @@ function createHtmlFileList(files, dir, useIcons, view) {
     var size = file.stat && !isDir
       ? file.stat.size
       : '';
+    const player = extname(file.name) === '.wav' ? `<audio src="${escapeHtml(normalizeSlashes(normalize(path.join('/'))))}" controls></audio>` : ''
+    return `   
+    <tr>
+       <td><a href="${escapeHtml(normalizeSlashes(normalize(path.join('/'))))}"  title="${escapeHtml(file.name)}">${escapeHtml(file.name)} </a>
+      
+       </td>
+       
+       <td>${escapeHtml(size)}</td>
+       <td>${escapeHtml(date)}</td>
+       <td> ${player}</td>
+     </tr>
+      `
 
-    return '<li><a href="'
-      + escapeHtml(normalizeSlashes(normalize(path.join('/'))))
-      + '" class="' + escapeHtml(classes.join(' ')) + '"'
-      + ' title="' + escapeHtml(file.name) + '">'
-      + '<span class="name">' + escapeHtml(file.name) + '</span>'
-      + '<span class="size">' + escapeHtml(size) + '</span>'
-      + '<span class="date">' + escapeHtml(date) + '</span>'
-      + '</a></li>';
+
+
+
   }).join('\n');
 
-  html += '</ul>';
+  html += '   </tbody></table>';
 
   return html;
 }
@@ -484,8 +495,8 @@ function normalizeSlashes(path) {
  */
 
 function removeHidden(files) {
-  return files.filter(function(file){
-    return file[0] !== '.'
+  return files.filter(function (file) {
+    return '.' != file[0];
   });
 }
 
@@ -494,7 +505,7 @@ function removeHidden(files) {
  * @private
  */
 
-function send (res, type, body) {
+function send(res, type, body) {
   // security header for content sniffing
   res.setHeader('X-Content-Type-Options', 'nosniff')
 
@@ -516,9 +527,9 @@ function stat(dir, files, cb) {
 
   batch.concurrency(10);
 
-  files.forEach(function(file){
-    batch.push(function(done){
-      fs.stat(join(dir, file), function(err, stat){
+  files.forEach(function (file) {
+    batch.push(function (done) {
+      fs.stat(join(dir, file), function (err, stat) {
         if (err && err.code !== 'ENOENT') return done(err);
 
         // pass ENOENT as null stat, not error
@@ -540,7 +551,6 @@ var icons = {
   'folder': 'folder.png',
 
   // generic mime type icons
-  'font': 'font.png',
   'image': 'image.png',
   'text': 'page_white_text.png',
   'video': 'film.png',
@@ -551,6 +561,7 @@ var icons = {
   '+zip': 'box.png',
 
   // specific mime type icons
+  'application/font-woff': 'font.png',
   'application/javascript': 'page_white_code_red.png',
   'application/json': 'page_white_code.png',
   'application/msword': 'page_white_word.png',
@@ -564,6 +575,7 @@ var icons = {
   'application/vnd.oasis.opendocument.text': 'page_white_word.png',
   'application/x-7z-compressed': 'box.png',
   'application/x-sh': 'application_xp_terminal.png',
+  'application/x-font-ttf': 'font.png',
   'application/x-msaccess': 'page_white_database.png',
   'application/x-shockwave-flash': 'page_white_flash.png',
   'application/x-sql': 'page_white_database.png',
@@ -617,6 +629,7 @@ var icons = {
   '.map': 'map.png',
   '.msi': 'box.png',
   '.mv4': 'film.png',
+  '.otf': 'font.png',
   '.pdb': 'page_white_database.png',
   '.php': 'page_white_php.png',
   '.pl': 'page_white_code.png',
